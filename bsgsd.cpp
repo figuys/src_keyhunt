@@ -116,7 +116,7 @@ void checkpointer(void *ptr,const char *file,const char *function,const  char *n
 void* client_handler(void* arg);
 
 
-void calcualteindex(int i,Int *key);
+void calculate_index(int i,Int *key);
 
 void *thread_process_bsgs(void *vargp);
 void *thread_bPload(void *vargp);
@@ -1890,7 +1890,7 @@ int bsgs_thirdcheck(Int *start_range,uint32_t a,Int *privatekey)	{
 		if(r)	{
 			r = bsgs_searchbinary(bPtable,xpoint_raw,bsgs_m3,&j);
 			if(r)	{
-				calcualteindex(i,&calculatedkey);
+				calculate_index(i,&calculatedkey);
 				privatekey->Set(&calculatedkey);
 				privatekey->Add((uint64_t)(j+1));
 				privatekey->Add(&base_key);
@@ -1901,7 +1901,7 @@ int bsgs_thirdcheck(Int *start_range,uint32_t a,Int *privatekey)	{
 					found = 1;
 				}
 				else	{
-					calcualteindex(i,&calculatedkey);
+					calculate_index(i,&calculatedkey);
 					privatekey->Set(&calculatedkey);
 					privatekey->Sub((uint64_t)(j+1));
 					privatekey->Add(&base_key);
@@ -1920,7 +1920,7 @@ int bsgs_thirdcheck(Int *start_range,uint32_t a,Int *privatekey)	{
 				This is is an special case
 			*/
 			if(BSGS_Q.x.IsEqual(&BSGS_AMP3[i].x))	{
-				calcualteindex(i,&calculatedkey);
+				calculate_index(i,&calculatedkey);
 				privatekey->Set(&calculatedkey);
 				privatekey->Add(&base_key);
 				found = 1;
@@ -1932,7 +1932,7 @@ int bsgs_thirdcheck(Int *start_range,uint32_t a,Int *privatekey)	{
 	return found;
 }
 
-void calcualteindex(int i,Int *key)	{
+void calculate_index(int i,Int *key)	{
 	if(i == 0)	{
 		key->Set(&BSGS_M3);
 	}
