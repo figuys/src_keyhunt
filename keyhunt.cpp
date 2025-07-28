@@ -185,7 +185,7 @@ bool initBloomFilter(struct bloom *bloom_arg,uint64_t items_bloom);
 
 void writeFileIfNeeded(const char *fileName);
 
-void calcualteindex(int i,Int *key);
+void calculate_index(int i,Int *key);
 #if defined(_WIN64) && !defined(__CYGWIN__)
 DWORD WINAPI thread_process_vanity(LPVOID vargp);
 DWORD WINAPI thread_process_minikeys(LPVOID vargp);
@@ -4329,7 +4329,7 @@ int bsgs_thirdcheck(Int *start_range,uint32_t a,uint32_t k_index,Int *privatekey
 		if(r)	{
 			r = bsgs_searchbinary(bPtable,xpoint_raw,bsgs_m3,&j);
 			if(r)	{
-				calcualteindex(i,&calculatedkey);
+				calculate_index(i,&calculatedkey);
 				privatekey->Set(&calculatedkey);
 				privatekey->Add((uint64_t)(j+1));
 				privatekey->Add(&base_key);
@@ -4338,7 +4338,7 @@ int bsgs_thirdcheck(Int *start_range,uint32_t a,uint32_t k_index,Int *privatekey
 					found = 1;
 				}
 				else	{
-					calcualteindex(i,&calculatedkey);
+					calculate_index(i,&calculatedkey);
 					privatekey->Set(&calculatedkey);
 					privatekey->Sub((uint64_t)(j+1));
 					privatekey->Add(&base_key);
@@ -4356,7 +4356,7 @@ int bsgs_thirdcheck(Int *start_range,uint32_t a,uint32_t k_index,Int *privatekey
 				This is is an special case
 			*/
 			if(BSGS_Q.x.IsEqual(&BSGS_AMP3[i].x))	{
-				calcualteindex(i,&calculatedkey);
+				calculate_index(i,&calculatedkey);
 				privatekey->Set(&calculatedkey);
 				privatekey->Add(&base_key);
 				found = 1;
@@ -6677,7 +6677,7 @@ void writeFileIfNeeded(const char *fileName)	{
 	}
 }
 
-void calcualteindex(int i,Int *key)	{
+void calculate_index(int i,Int *key)	{
 	if(i == 0)	{
 		key->Set(&BSGS_M3);
 	}
