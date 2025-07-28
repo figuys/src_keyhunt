@@ -10,6 +10,9 @@ email: albertobsd@gmail.com
 #include <math.h>
 #include <time.h>
 #include <vector>
+#include <array>
+#include <string>
+#include <array>
 #include <inttypes.h>
 #include "base58/libbase58.h"
 #include "rmd160/rmd160.h"
@@ -256,10 +259,11 @@ uint8_t byte_encode_crypto = 0x00;		/* Bitcoin  */
 
 int vanity_rmd_targets = 0;
 int vanity_rmd_total = 0;
-int *vanity_rmd_limits = NULL;
-uint8_t ***vanity_rmd_limit_values_A = NULL,***vanity_rmd_limit_values_B = NULL;
+std::vector<int> vanity_rmd_limits;
+std::vector<std::vector<std::array<uint8_t,20>>> vanity_rmd_limit_values_A;
+std::vector<std::vector<std::array<uint8_t,20>>> vanity_rmd_limit_values_B;
 int vanity_rmd_minimun_bytes_check_length = 999999;
-char **vanity_address_targets = NULL;
+std::vector<std::string> vanity_address_targets;
 struct bloom *vanity_bloom = NULL;
 
 struct bloom bloom;
@@ -322,7 +326,7 @@ uint64_t BSGS_BUFFERREGISTERLENGTH = 36;
 /*
 BSGS Variables
 */
-int *bsgs_found;
+std::vector<int> bsgs_found;
 std::vector<Point> OriginalPointsBSGS;
 bool *OriginalPointsBSGScompressed;
 
@@ -330,7 +334,7 @@ uint64_t bytes;
 char checksum[32],checksum_backup[32];
 char buffer_bloom_file[1024];
 struct bsgs_xvalue *bPtable;
-struct address_value *addressTable;
+std::vector<struct address_value> addressTable;
 
 struct oldbloom oldbloom_bP;
 
@@ -953,7 +957,7 @@ int main(int argc, char **argv)	{
 		
 		if(FLAGMODE != MODE_VANITY && !FLAGREADEDFILE1)	{
 			printf("[+] Sorting data ...");
-			_sort(addressTable,N);
+			_sort(addressTable.data(),N);
 			printf(" done! %" PRIu64 " values were loaded and sorted\n",N);
 			writeFileIfNeeded(fileName);
 		}
@@ -984,8 +988,7 @@ int main(int argc, char **argv)	{
 			fprintf(stderr,"[E] There is no valid data in the file\n");
 			exit(EXIT_FAILURE);
 		}
-		bsgs_found = (int*) calloc(N,sizeof(int));
-		checkpointer((void *)bsgs_found,__FILE__,"calloc","bsgs_found" ,__LINE__ -1 );
+                bsgs_found.assign(N, 0);
 		OriginalPointsBSGS.reserve(N);
 		OriginalPointsBSGScompressed = (bool*) malloc(N*sizeof(bool));
 		checkpointer((void *)OriginalPointsBSGScompressed,__FILE__,"malloc","OriginalPointsBSGScompressed" ,__LINE__ -1 );
@@ -2466,7 +2469,7 @@ void *thread_process_minikeys(void *vargp)	{
 					for(k = 0; k < 4; k++)	{
 						r = bloom_check(&bloom,publickeyhashrmd160_uncompress[k],20);
 						if(r) {
-							r = searchbinary(addressTable,publickeyhashrmd160_uncompress[k],N);
+							r = searchbinary(addressTable.data(),publickeyhashrmd160_uncompress[k],N);
 							if(r) {
 								/* hit */
 								hextemp = key_mpz[k].GetBase16();
@@ -2795,7 +2798,7 @@ void *thread_process(void *vargp)	{
 											for(l = 0;l < 6; l++)	{
 												r = bloom_check(&bloom,publickeyhashrmd160_endomorphism[l][k],MAXLENGTHADDRESS);
 												if(r) {
-													r = searchbinary(addressTable,publickeyhashrmd160_endomorphism[l][k],N);
+													r = searchbinary(addressTable.data(),publickeyhashrmd160_endomorphism[l][k],N);
 													if(r) {
 														keyfound.SetInt32(k);
 														keyfound.Mult(&stride);
@@ -2858,7 +2861,7 @@ void *thread_process(void *vargp)	{
 											for(l = 0;l < 2; l++)	{
 												r = bloom_check(&bloom,publickeyhashrmd160_endomorphism[l][k],MAXLENGTHADDRESS);
 												if(r) {
-													r = searchbinary(addressTable,publickeyhashrmd160_endomorphism[l][k],N);
+													r = searchbinary(addressTable.data(),publickeyhashrmd160_endomorphism[l][k],N);
 													if(r) {
 														keyfound.SetInt32(k);
 														keyfound.Mult(&stride);
@@ -2882,7 +2885,7 @@ void *thread_process(void *vargp)	{
 											for(l = 6;l < 12; l++)	{	//We check the array from 6 to 12(excluded) because we save the uncompressed information there
 												r = bloom_check(&bloom,publickeyhashrmd160_endomorphism[l][k],MAXLENGTHADDRESS);	//Check in Bloom filter
 												if(r) {
-													r = searchbinary(addressTable,publickeyhashrmd160_endomorphism[l][k],N);		//Check in Array using Binary search
+													r = searchbinary(addressTable.data(),publickeyhashrmd160_endomorphism[l][k],N);		//Check in Array using Binary search
 													if(r) {
 														keyfound.SetInt32(k);
 														keyfound.Mult(&stride);
@@ -2926,7 +2929,7 @@ void *thread_process(void *vargp)	{
 										else	{
 											r = bloom_check(&bloom,publickeyhashrmd160_uncompress[k],MAXLENGTHADDRESS);
 											if(r) {
-												r = searchbinary(addressTable,publickeyhashrmd160_uncompress[k],N);
+												r = searchbinary(addressTable.data(),publickeyhashrmd160_uncompress[k],N);
 												if(r) {
 													keyfound.SetInt32(k);
 													keyfound.Mult(&stride);
@@ -2944,7 +2947,7 @@ void *thread_process(void *vargp)	{
 										for(l = 0;l < 6; l++)	{
 											r = bloom_check(&bloom,publickeyhashrmd160_endomorphism[l][k],MAXLENGTHADDRESS);
 											if(r) {
-												r = searchbinary(addressTable,publickeyhashrmd160_endomorphism[l][k],N);
+												r = searchbinary(addressTable.data(),publickeyhashrmd160_endomorphism[l][k],N);
 												if(r) {												
 													keyfound.SetInt32(k);
 													keyfound.Mult(&stride);
@@ -2990,7 +2993,7 @@ void *thread_process(void *vargp)	{
 									for(k = 0; k < 4;k++)	{
 										r = bloom_check(&bloom,publickeyhashrmd160_uncompress[k],MAXLENGTHADDRESS);
 										if(r) {
-											r = searchbinary(addressTable,publickeyhashrmd160_uncompress[k],N);
+											r = searchbinary(addressTable.data(),publickeyhashrmd160_uncompress[k],N);
 											if(r) {
 												keyfound.SetInt32(k);
 												keyfound.Mult(&stride);
@@ -3008,7 +3011,7 @@ void *thread_process(void *vargp)	{
 									pts[(4*j)+k].x.Get32Bytes((unsigned char *)rawvalue);
 									r = bloom_check(&bloom,rawvalue,MAXLENGTHADDRESS);
 									if(r) {
-										r = searchbinary(addressTable,rawvalue,N);
+										r = searchbinary(addressTable.data(),rawvalue,N);
 										if(r) {
 											keyfound.SetInt32(k);
 											keyfound.Mult(&stride);
@@ -3020,7 +3023,7 @@ void *thread_process(void *vargp)	{
 									endomorphism_beta[(j*4)+k].x.Get32Bytes((unsigned char *)rawvalue);
 									r = bloom_check(&bloom,rawvalue,MAXLENGTHADDRESS);
 									if(r) {
-										r = searchbinary(addressTable,rawvalue,N);
+										r = searchbinary(addressTable.data(),rawvalue,N);
 										if(r) {
 											keyfound.SetInt32(k);
 											keyfound.Mult(&stride);
@@ -3034,7 +3037,7 @@ void *thread_process(void *vargp)	{
 									endomorphism_beta2[(j*4)+k].x.Get32Bytes((unsigned char *)rawvalue);
 									r = bloom_check(&bloom,rawvalue,MAXLENGTHADDRESS);
 									if(r) {
-										r = searchbinary(addressTable,rawvalue,N);
+										r = searchbinary(addressTable.data(),rawvalue,N);
 										if(r) {
 											keyfound.SetInt32(k);
 											keyfound.Mult(&stride);
@@ -3048,7 +3051,7 @@ void *thread_process(void *vargp)	{
 									pts[(4*j)+k].x.Get32Bytes((unsigned char *)rawvalue);
 									r = bloom_check(&bloom,rawvalue,MAXLENGTHADDRESS);
 									if(r) {
-										r = searchbinary(addressTable,rawvalue,N);
+										r = searchbinary(addressTable.data(),rawvalue,N);
 										if(r) {
 											keyfound.SetInt32(k);
 											keyfound.Mult(&stride);
@@ -5784,8 +5787,8 @@ bool vanityrmdmatch(unsigned char *rmdhash)	{
 		case 1:
 			for(i = 0; i < vanity_rmd_targets && !r;i++)	{
 				for(j = 0; j < vanity_rmd_limits[i] && !r; j++)	{
-					cmpA = memcmp(vanity_rmd_limit_values_A[i][j],rmdhash,20);
-					cmpB = memcmp(vanity_rmd_limit_values_B[i][j],rmdhash,20);
+                                        cmpA = memcmp(vanity_rmd_limit_values_A[i][j].data(),rmdhash,20);
+                                        cmpB = memcmp(vanity_rmd_limit_values_B[i][j].data(),rmdhash,20);
 					if(cmpA <= 0 && cmpB >= 0)	{
 						//if(FLAGDEBUG ) printf("\n\n[D] cmpA = %i, cmpB = %i \n\n",cmpA,cmpB);
 						r = true;
@@ -5834,127 +5837,98 @@ void writevanitykey(bool compressed,Int *key)	{
 }
 
 
-int addvanity(char *target)	{
-	unsigned char raw_value_A[50],raw_value_B[50];
-	char target_copy[50];
-	int stringsize,targetsize,j,r = 0;
-	size_t raw_value_length;
-	int values_A_size = 0,values_B_size = 0,minimun_bytes;
-	raw_value_length = 50;
-	targetsize = strlen(target);
-	stringsize = targetsize;
-	memset(raw_value_A,0,50);
-	memset(target_copy,0,50);
-	if(targetsize >= 30 )	{
-		return 0;
-	}
-	memcpy(target_copy,target,targetsize);
-	j = 0;
-	vanity_address_targets = (char**)  realloc(vanity_address_targets,(vanity_rmd_targets+1) * sizeof(char*));
-	vanity_address_targets[vanity_rmd_targets] = NULL;
-	checkpointer((void *)vanity_address_targets,__FILE__,"realloc","vanity_address_targets" ,__LINE__ -1 );
-	vanity_rmd_limits = (int*) realloc(vanity_rmd_limits,(vanity_rmd_targets+1) * sizeof(int));
-	vanity_rmd_limits[vanity_rmd_targets] = 0;
-	checkpointer((void *)vanity_rmd_limits,__FILE__,"realloc","vanity_rmd_limits" ,__LINE__ -1 );
-	vanity_rmd_limit_values_A = (uint8_t***)realloc(vanity_rmd_limit_values_A,(vanity_rmd_targets+1) * sizeof(unsigned char *));
-	checkpointer((void *)vanity_rmd_limit_values_A,__FILE__,"realloc","vanity_rmd_limit_values_A" ,__LINE__ -1 );
-	vanity_rmd_limit_values_A[vanity_rmd_targets] = NULL;
-	vanity_rmd_limit_values_B = (uint8_t***)realloc(vanity_rmd_limit_values_B,(vanity_rmd_targets+1) * sizeof(unsigned char *));
-	checkpointer((void *)vanity_rmd_limit_values_B,__FILE__,"realloc","vanity_rmd_limit_values_B" ,__LINE__ -1 );
-	vanity_rmd_limit_values_B[vanity_rmd_targets] = NULL;
-	do	{
-		raw_value_length = 50;
-		b58tobin(raw_value_A,&raw_value_length,target_copy,stringsize);
-		if(raw_value_length < 25)	{
-			target_copy[stringsize] = '1';
-			stringsize++;
-		}
-		if(raw_value_length == 25)	{
-			b58tobin(raw_value_A,&raw_value_length,target_copy,stringsize);
-			
-			vanity_rmd_limit_values_A[vanity_rmd_targets] = (uint8_t**)realloc(vanity_rmd_limit_values_A[vanity_rmd_targets],(j+1) * sizeof(unsigned char *));
-			checkpointer((void *)vanity_rmd_limit_values_A[vanity_rmd_targets],__FILE__,"realloc","vanity_rmd_limit_values_A" ,__LINE__ -1 );
-			vanity_rmd_limit_values_A[vanity_rmd_targets][j] = (uint8_t*)calloc(20,1);
-			checkpointer((void *)vanity_rmd_limit_values_A[vanity_rmd_targets][j],__FILE__,"realloc","vanity_rmd_limit_values_A" ,__LINE__ -1 );
-			
-			memcpy(vanity_rmd_limit_values_A[vanity_rmd_targets][j] ,raw_value_A +1,20);
-			
-			j++;	
-			values_A_size = j;
-			target_copy[stringsize] = '1';
-			stringsize++;
-		}	
-	}while(raw_value_length <= 25);
-	
-	stringsize = targetsize;
-	memset(raw_value_B,0,50);
-	memset(target_copy,0,50);
-	memcpy(target_copy,target,targetsize);
+int addvanity(char *target)     {
+        unsigned char raw_value_A[50],raw_value_B[50];
+        char target_copy[50];
+        int stringsize,targetsize,j,r = 0;
+        size_t raw_value_length;
+        int values_A_size = 0,values_B_size = 0,minimun_bytes;
+        raw_value_length = 50;
+        targetsize = strlen(target);
+        stringsize = targetsize;
+        memset(raw_value_A,0,50);
+        memset(target_copy,0,50);
+        if(targetsize >= 30 )   {
+                return 0;
+        }
+        memcpy(target_copy,target,targetsize);
+        j = 0;
 
-	j = 0;
-	do	{
-		raw_value_length = 50;
-		b58tobin(raw_value_B,&raw_value_length,target_copy,stringsize);
-		if(raw_value_length < 25)	{
-			target_copy[stringsize] = 'z';
-			stringsize++;
-		}
-		if(raw_value_length == 25)	{
-			
-			b58tobin(raw_value_B,&raw_value_length,target_copy,stringsize);
-			vanity_rmd_limit_values_B[vanity_rmd_targets] = (uint8_t**)realloc(vanity_rmd_limit_values_B[vanity_rmd_targets],(j+1) * sizeof(unsigned char *));
-			checkpointer((void *)vanity_rmd_limit_values_B[vanity_rmd_targets],__FILE__,"realloc","vanity_rmd_limit_values_B" ,__LINE__ -1 );
-			checkpointer((void *)vanity_rmd_limit_values_B[vanity_rmd_targets],__FILE__,"realloc","vanity_rmd_limit_values_B" ,__LINE__ -1 );
-			vanity_rmd_limit_values_B[vanity_rmd_targets][j] = (uint8_t*)calloc(20,1);
-			checkpointer((void *)vanity_rmd_limit_values_B[vanity_rmd_targets][j],__FILE__,"calloc","vanity_rmd_limit_values_B" ,__LINE__ -1 );
-			memcpy(vanity_rmd_limit_values_B[vanity_rmd_targets][j],raw_value_B+1,20);
-			
-			j++;				
-			values_B_size = j;
-			
-			target_copy[stringsize] = 'z';
-			stringsize++;
-		}
-	}while(raw_value_length <= 25);
-	
-	if(values_A_size >= 1 && values_B_size >= 1)	{
-		if(values_A_size != values_B_size)	{
-			if(values_A_size > values_B_size)
-				r = values_B_size;
-			else
-				r = values_A_size;
-		}
-		else	{
-			r = values_A_size;
-		}
-		for(j = 0; j < r; j++)	{
-			minimun_bytes =  minimum_same_bytes(vanity_rmd_limit_values_A[vanity_rmd_targets][j],vanity_rmd_limit_values_B[vanity_rmd_targets][j],20);
-			if(minimun_bytes < vanity_rmd_minimun_bytes_check_length)	{
-				vanity_rmd_minimun_bytes_check_length = minimun_bytes;
-			}
-		}
-		vanity_address_targets[vanity_rmd_targets] = (char*) calloc(targetsize+1,sizeof(char));
-		checkpointer((void *)vanity_address_targets[vanity_rmd_targets],__FILE__,"calloc","vanity_address_targets" ,__LINE__ -1 );
-		memcpy(vanity_address_targets[vanity_rmd_targets],target,targetsize+1);	// +1 to copy the null character
-		vanity_rmd_limits[vanity_rmd_targets] = r;
-		vanity_rmd_total+=r;
-		vanity_rmd_targets++;
-	}
-	else	{
-		for(j = 0; j < values_A_size;j++)	{
-			free(vanity_rmd_limit_values_A[vanity_rmd_targets][j]);
-		}
-		free(vanity_rmd_limit_values_A[vanity_rmd_targets]);
-		vanity_rmd_limit_values_A[vanity_rmd_targets] = NULL;
-		
-		for(j = 0; j < values_B_size;j++)	{
-			free(vanity_rmd_limit_values_B[vanity_rmd_targets][j]);
-		}
-		free(vanity_rmd_limit_values_B[vanity_rmd_targets]);
-		vanity_rmd_limit_values_B[vanity_rmd_targets] = NULL;
-		r = 0;
-	}
-	return r;
+        vanity_address_targets.emplace_back();
+        vanity_rmd_limits.emplace_back(0);
+        vanity_rmd_limit_values_A.emplace_back();
+        vanity_rmd_limit_values_B.emplace_back();
+
+        do      {
+                raw_value_length = 50;
+                b58tobin(raw_value_A,&raw_value_length,target_copy,stringsize);
+                if(raw_value_length < 25)       {
+                        target_copy[stringsize] = '1';
+                        stringsize++;
+                }
+                if(raw_value_length == 25)      {
+                        b58tobin(raw_value_A,&raw_value_length,target_copy,stringsize);
+                        vanity_rmd_limit_values_A.back().push_back({});
+                        memcpy(vanity_rmd_limit_values_A.back().back().data(),raw_value_A +1,20);
+                        j++;
+                        values_A_size = j;
+                        target_copy[stringsize] = '1';
+                        stringsize++;
+                }
+        }while(raw_value_length <= 25);
+
+        stringsize = targetsize;
+        memset(raw_value_B,0,50);
+        memset(target_copy,0,50);
+        memcpy(target_copy,target,targetsize);
+
+        j = 0;
+        do      {
+                raw_value_length = 50;
+                b58tobin(raw_value_B,&raw_value_length,target_copy,stringsize);
+                if(raw_value_length < 25)       {
+                        target_copy[stringsize] = 'z';
+                        stringsize++;
+                }
+                if(raw_value_length == 25)      {
+                        b58tobin(raw_value_B,&raw_value_length,target_copy,stringsize);
+                        vanity_rmd_limit_values_B.back().push_back({});
+                        memcpy(vanity_rmd_limit_values_B.back().back().data(),raw_value_B+1,20);
+                        j++;
+                        values_B_size = j;
+                        target_copy[stringsize] = 'z';
+                        stringsize++;
+                }
+        }while(raw_value_length <= 25);
+
+        if(values_A_size >= 1 && values_B_size >= 1)    {
+                if(values_A_size != values_B_size)      {
+                        r = values_A_size > values_B_size ? values_B_size : values_A_size;
+                }
+                else    {
+                        r = values_A_size;
+                }
+                for(j = 0; j < r; j++)  {
+                        minimun_bytes =  minimum_same_bytes(
+                                        vanity_rmd_limit_values_A.back()[j].data(),
+                                        vanity_rmd_limit_values_B.back()[j].data(),20);
+                        if(minimun_bytes < vanity_rmd_minimun_bytes_check_length)       {
+                                vanity_rmd_minimun_bytes_check_length = minimun_bytes;
+                        }
+                }
+                vanity_address_targets.back() = std::string(target,targetsize);
+                vanity_rmd_limits.back() = r;
+                vanity_rmd_total+=r;
+                vanity_rmd_targets++;
+        }
+        else    {
+                vanity_rmd_limit_values_A.pop_back();
+                vanity_rmd_limit_values_B.pop_back();
+                vanity_address_targets.pop_back();
+                vanity_rmd_limits.pop_back();
+                r = 0;
+        }
+        return r;
 }
 
 
@@ -6078,7 +6052,7 @@ bool processOneVanity()	{
 	
 	for(i = 0; i < vanity_rmd_targets;i++)	{
 		for(k = 0; k < vanity_rmd_limits[i]; k++)	{
-			bloom_add(vanity_bloom, vanity_rmd_limit_values_A[i][k] ,vanity_rmd_minimun_bytes_check_length);
+			bloom_add(vanity_bloom, vanity_rmd_limit_values_A[i][k].data() ,vanity_rmd_minimun_bytes_check_length);
 		}
 	}
 	return true;
@@ -6122,7 +6096,7 @@ bool readFileVanity(char *fileName)	{
 	
 	for(i = 0; i < vanity_rmd_targets ; i++)	{
 		for(k = 0; k < vanity_rmd_limits[i]; k++)	{
-			bloom_add(vanity_bloom, vanity_rmd_limit_values_A[i][k] ,vanity_rmd_minimun_bytes_check_length);
+			bloom_add(vanity_bloom, vanity_rmd_limit_values_A[i][k].data() ,vanity_rmd_minimun_bytes_check_length);
 		}
 	}
 	return true;
@@ -6239,14 +6213,9 @@ bool readFileAddress(char *fileName)	{
 	
 			printf("[+] Allocating memory for %" PRIu64 " elements: %.2f MB\n",N,(double)(((double) sizeof(struct address_value)*N)/(double)1048576));
 			
-			addressTable = (struct address_value*) malloc(dataSize);
-			if(addressTable == NULL)	{
-				fprintf(stderr,"[E] Error allocating memory, code line %i\n",__LINE__ - 2);
-				fclose(fileDescriptor);
-				return false;
-			}
+                        addressTable.resize(N);
 			
-			bytesRead = fread(addressTable,1,dataSize,fileDescriptor);
+                        bytesRead = fread(addressTable.data(),1,dataSize,fileDescriptor);
 			if(bytesRead != dataSize)	{
 				fprintf(stderr,"[E] Error reading file, code line %i\n",__LINE__ - 2);
 				fclose(fileDescriptor);
@@ -6254,7 +6223,7 @@ bool readFileAddress(char *fileName)	{
 			}
 			if(FLAGSKIPCHECKSUM == 0)	{
 					
-				sha256((uint8_t*)addressTable,dataSize,(uint8_t*)checksum);
+				sha256((uint8_t*)addressTable.data(),dataSize,(uint8_t*)checksum);
 				if(memcmp(checksum,dataChecksum,32) != 0)	{
 					fprintf(stderr,"[E] Error checksum mismatch, code line %i\n",__LINE__ - 2);
 					fclose(fileDescriptor);
@@ -6327,9 +6296,8 @@ bool forceReadFileAddress(char *fileName)	{
 	fseek(fileDescriptor,0,SEEK_SET);
 	MAXLENGTHADDRESS = 20;		/*20 bytes beacuase we only need the data in binary*/
 	
-	printf("[+] Allocating memory for %" PRIu64 " elements: %.2f MB\n",numberItems,(double)(((double) sizeof(struct address_value)*numberItems)/(double)1048576));
-	addressTable = (struct address_value*) malloc(sizeof(struct address_value)*numberItems);
-	checkpointer((void *)addressTable,__FILE__,"malloc","addressTable" ,__LINE__ -1 );
+        printf("[+] Allocating memory for %" PRIu64 " elements: %.2f MB\n",numberItems,(double)(((double) sizeof(struct address_value)*numberItems)/(double)1048576));
+        addressTable.resize(numberItems);
 		
 	if(!initBloomFilter(&bloom,numberItems))
 		return false;
@@ -6401,9 +6369,8 @@ bool forceReadFileAddressEth(char *fileName)	{
 	MAXLENGTHADDRESS = 20;		/*20 bytes beacuase we only need the data in binary*/
 	N = numberItems;
 	
-	printf("[+] Allocating memory for %" PRIu64 " elements: %.2f MB\n",numberItems,(double)(((double) sizeof(struct address_value)*numberItems)/(double)1048576));
-	addressTable = (struct address_value*) malloc(sizeof(struct address_value)*numberItems);
-	checkpointer((void *)addressTable,__FILE__,"malloc","addressTable" ,__LINE__ -1 );
+        printf("[+] Allocating memory for %" PRIu64 " elements: %.2f MB\n",numberItems,(double)(((double) sizeof(struct address_value)*numberItems)/(double)1048576));
+        addressTable.resize(numberItems);
 	
 	
 	if(!initBloomFilter(&bloom,N))
@@ -6480,9 +6447,8 @@ bool forceReadFileXPoint(char *fileName)	{
 
 	MAXLENGTHADDRESS = 20;		/*20 bytes beacuase we only need the data in binary*/
 	
-	printf("[+] Allocating memory for %" PRIu64 " elements: %.2f MB\n",numberItems,(double)(((double) sizeof(struct address_value)*numberItems)/(double)1048576));
-	addressTable = (struct address_value*) malloc(sizeof(struct address_value)*numberItems);
-	checkpointer((void *)addressTable,__FILE__,"malloc","addressTable" ,__LINE__ - 1);
+        printf("[+] Allocating memory for %" PRIu64 " elements: %.2f MB\n",numberItems,(double)(((double) sizeof(struct address_value)*numberItems)/(double)1048576));
+        addressTable.resize(numberItems);
 	
 	N = numberItems;
 	
@@ -6646,7 +6612,7 @@ void writeFileIfNeeded(const char *fileName)	{
 
 			
 			
-			sha256((uint8_t*)addressTable,dataSize,(uint8_t*)dataChecksum);
+			sha256((uint8_t*)addressTable.data(),dataSize,(uint8_t*)dataChecksum);
 			printf(".");
 
 			bytesWrite = fwrite(dataChecksum,1,32,fileDescriptor);
@@ -6663,7 +6629,7 @@ void writeFileIfNeeded(const char *fileName)	{
 			}
 			printf(".");
 			
-			bytesWrite = fwrite(addressTable,1,dataSize,fileDescriptor);
+                        bytesWrite = fwrite(addressTable.data(),1,dataSize,fileDescriptor);
 			if(bytesWrite != dataSize)	{
 				fprintf(stderr,"[E] Error writing file, code line %i\n",__LINE__ - 2);
 				exit(EXIT_FAILURE);
